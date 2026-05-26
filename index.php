@@ -1,3 +1,6 @@
+
+<!DOCTYPE html>
+<html lang="sk">
 <?php
 // Pripojíme sa k databáze
 include "db.php";
