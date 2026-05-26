@@ -1,9 +1,15 @@
 <?php
 include "db.php";
 
-$id = $_GET['id'];
+if (isset($_GET['id'])) {
 
-$conn->query("DELETE FROM media WHERE id=$id");
+    $id = $_GET['id'];
+
+    $stmt = $conn->prepare("DELETE FROM media WHERE id=?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+}
 
 header("Location: index.php");
+exit();
 ?>
