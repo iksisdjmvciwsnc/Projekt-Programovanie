@@ -2,24 +2,27 @@
 include "db.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // 1. Ošetrenie prázdnych hodnôt (používame operátor ?? pre PHP 8)
+    // 1. Ošetrenie textových hodnôt
     $title = $_POST['title'] ?? '';
     $type = $_POST['type'] ?? 'film';
     
-    // Ak rok alebo hodnotenie ostanú prázdne, nastavíme im predvolenú hodnotu 0, 
-    // aby databáza neprotestovala, že do čísla vkladáme prázdny text.
-    $year = !empty($_POST['year']) ? $_POST['year'] : 0;
-    $rating = !empty($_POST['rating']) ? $_POST['rating'] : 0;
+    // Rok zostáva ako celé číslo
+    $year = !empty($_POST['year']) ? intval($_POST['year']) : 0;
+    
+    // NOVÉ: Hodnotenie spracujeme ako desatinné číslo pomocou floatval()
+    $rating = !empty($_POST['rating']) ? floatval($_POST['rating']) : 0.0;
+    
+    // NOVÉ: Načítanie dĺžky (minúty alebo strany)
+    $duration_pages = !empty($_POST['duration_pages']) ? intval($_POST['duration_pages']) : 0;
 
     if (!empty($title)) {
-        // 2. Ochrana pred apostrofmi (tzv. Escapovanie)
-        // Toto zabráni tomu, aby názvy ako "Assassin's Creed" rozbili databázu
+        // 2. Escapovanie kvôli bezpečnosti
         $title_escaped = $conn->real_escape_string($title);
         $type_escaped = $conn->real_escape_string($type);
 
-        // 3. Bezpečné vloženie do databázy
-        $sql = "INSERT INTO media (title, type, year, rating)
-                VALUES ('$title_escaped', '$type_escaped', '$year', '$rating')";
+        // 3. Bezpečné vloženie s novým stĺpcom duration_pages
+        $sql = "INSERT INTO media (title, type, year, rating, duration_pages)
+                VALUES ('$title_escaped', '$type_escaped', '$year', '$rating', '$duration_pages')";
         
         $conn->query($sql);
         
@@ -34,42 +37,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Pridať záznam</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .form-group { margin-bottom: 15px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h2>Pridať nový film alebo knihu</h2>
     
     <form method="POST" action="">
         <div class="form-group">
-            <label>Názov:</label><br>
+            <label>Názov:</label>
             <input type="text" name="title" required>
         </div>
 
         <div class="form-group">
-            <label>Typ:</label><br>
-            <select name="type">
+            <label>Typ:</label>
+            <select name="type" id="media-type" onchange="obnovPolickoDlzky()">
                 <option value="film">Film</option>
                 <option value="kniha">Kniha</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label>Rok vydania:</label><br>
+            <label id="dlzka-label">Dĺžka filmu (v minútach):</label>
+            <input type="number" name="duration_pages" min="0">
+        </div>
+
+        <div class="form-group">
+            <label>Rok vydania:</label>
             <input type="number" name="year">
         </div>
 
         <div class="form-group">
-            <label>Hodnotenie (napr. 1-10):</label><br>
-            <input type="number" name="rating">
+            <label>Hodnotenie (napr. 0.0 - 10.0):</label>
+            <input type="number" name="rating" min="0" max="10" step="0.1">
         </div>
 
         <button type="submit">Pridať do databázy</button>
     </form>
     
     <br>
-    <a href="index.php">Späť na zoznam</a>
+    <a href="index.php" class="back-link">Späť na zoznam</a>
+
+    <script>
+    function obnovPolickoDlzky() {
+        var selectType = document.getElementById("media-type").value;
+        var label = document.getElementById("dlzka-label");
+        
+        if (selectType === "kniha") {
+            label.innerText = "Počet strán knihy:";
+        } else {
+            label.innerText = "Dĺžka filmu (v minútach):";
+        }
+    }
+    </script>
 </body>
 </html>
